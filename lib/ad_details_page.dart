@@ -14,20 +14,27 @@ class AdDetailsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(t.translate('ad_details')),
+        backgroundColor: Colors.amber[700],
+        foregroundColor: Colors.black,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // الصورة الرئيسية
-            if (ad.image != null && ad.image.isNotEmpty)
+            // ✅ الصورة الرئيسية
+            if (ad.images.isNotEmpty)
               Image.network(
-                'http://157.245.19.128:8000/storage/${ad.image}',
+                'http://delni.co/storage/${ad.images.first}', // ✅ تم التعديل هنا
                 width: double.infinity,
                 height: 240,
                 fit: BoxFit.cover,
+              )
+            else
+              const SizedBox(
+                height: 240,
+                child: Center(child: Icon(Icons.image, size: 80, color: Colors.grey)),
               ),
 
-            // التفاصيل
+            // ✅ التفاصيل
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Card(
@@ -87,7 +94,8 @@ class AdDetailsPage extends StatelessWidget {
                         ad.description,
                         style: const TextStyle(fontSize: 16),
                       ),
-                      if (ad.email != null) ...[
+
+                      if (ad.email != null && ad.email!.isNotEmpty) ...[
                         const Divider(height: 32),
                         Row(
                           children: [

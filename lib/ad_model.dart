@@ -28,7 +28,7 @@ class Ad {
       city: json['city'],
       category: json['category'],
       images: List<String>.from(json['images'] ?? []),
-      email: json['user']?['email'],
+      email: json['user']?['email'], // في حال أردت عرض البريد لاحقاً
     );
   }
 

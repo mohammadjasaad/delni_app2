@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'login_page.dart';
 import 'l10n/app_localizations.dart';
+// import 'splash_page.dart'; // إذا أنشأت صفحة البداية لاحقًا
 
 void main() {
   runApp(const MyApp());
@@ -14,24 +15,29 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'Delni',
       debugShowCheckedModeBanner: false,
-      locale: const Locale('ar'), // يمكنك تغييرها لـ Locale('en')
+
+      // ✅ استخدم لغة الجهاز تلقائيًا، أو ثبتها مؤقتًا
+      // locale: const Locale('ar'),
+
       supportedLocales: const [
         Locale('en'),
         Locale('ar'),
       ],
       localizationsDelegates: const [
-        AppLocalizationsDelegate(), // ✅ هذه أهم سطر
+        AppLocalizationsDelegate(),
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      title: 'Delni',
+
       theme: ThemeData(
         primarySwatch: Colors.amber,
         fontFamily: 'Roboto',
       ),
-      home: const LoginPage(),
+
+      home: const LoginPage(), // أو SplashPage إذا جاهزة
     );
   }
 }

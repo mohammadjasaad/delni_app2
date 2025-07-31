@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'messages.dart'; // ملف الترجمة الخارجي
 
 class AppLocalizations {
   final Locale locale;
@@ -9,44 +10,10 @@ class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
 
-  static const _localizedStrings = {
-    'en': {
-      'app_title': 'Delni Classifieds',
-      'login': 'Login',
-      'register': 'Register',
-      'email': 'Email',
-      'password': 'Password',
-      'my_ads': 'My Ads',
-      'add_ad': 'Add Ad',
-      'edit': 'Edit',
-      'delete': 'Delete',
-      'title': 'Title',
-      'description': 'Description',
-      'price': 'Price',
-      'city': 'City',
-      'category': 'Category',
-    }, // ✅ هذه الفاصلة كانت ناقصة
-    'ar': {
-      'app_title': 'دلني للإعلانات',
-      'login': 'تسجيل الدخول',
-      'register': 'إنشاء حساب',
-      'email': 'البريد الإلكتروني',
-      'password': 'كلمة المرور',
-      'my_ads': 'إعلاناتي',
-      'add_ad': 'إضافة إعلان',
-      'edit': 'تعديل',
-      'delete': 'حذف',
-      'title': 'العنوان',
-      'description': 'الوصف',
-      'price': 'السعر',
-      'city': 'المدينة',
-      'category': 'التصنيف',
-    }
-  };
-
   String translate(String key) {
-    return _localizedStrings[locale.languageCode]?[key] ??
-        _localizedStrings['en']![key]!;
+    return messages[locale.languageCode]?[key] ??
+        messages['en']?[key] ??
+        key;
   }
 }
 

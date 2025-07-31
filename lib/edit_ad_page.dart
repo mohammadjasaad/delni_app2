@@ -25,6 +25,7 @@ class _EditAdPageState extends State<EditAdPage> {
   late String price;
   late String city;
   late String category;
+
   File? newImage;
   bool isLoading = false;
 
@@ -62,7 +63,7 @@ class _EditAdPageState extends State<EditAdPage> {
 
     setState(() => isLoading = true);
 
-    final uri = Uri.parse('http://157.245.19.128:8000/api/ads/${widget.ad.id}');
+    final uri = Uri.parse('http://delni.co/api/ads/${widget.ad.id}');
     final request = http.MultipartRequest('POST', uri);
     request.headers['Authorization'] = 'Bearer $token';
     request.fields['_method'] = 'PUT';
@@ -83,9 +84,9 @@ class _EditAdPageState extends State<EditAdPage> {
 
     if (response.statusCode == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.translate('ad_updated_success'))),
+        SnackBar(content: Text(AppLocalizations.of(context)!.translate('ad_updated_success'))),
       );
-      Navigator.pop(context, true); // العودة مع إشارة للتحديث
+      Navigator.pop(context, true); // ✅ إعادة تحميل الصفحة السابقة
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('فشل في تحديث الإعلان')),
@@ -142,23 +143,35 @@ class _EditAdPageState extends State<EditAdPage> {
                 icon: const Icon(Icons.image),
                 label: Text(t.translate('choose_image')),
               ),
+              const SizedBox(height: 10),
+
+              // ✅ عرض الصورة المختارة أو الحالية
               if (newImage != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Image.file(newImage!, height: 180),
+                Image.file(newImage!, height: 180, fit: BoxFit.cover)
+              else if (widget.ad.images.isNotEmpty)
+                Image.network(
+                  'http://delni.co/storage/${widget.ad.images.first}',
+                  height: 180,
+                  fit: BoxFit.cover,
                 )
               else
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Image.network(widget.ad.imageUrl, height: 180),
+                const SizedBox(
+                  height: 180,
+                  child: Center(child: Icon(Icons.image_not_supported, size: 60, color: Colors.grey)),
                 ),
-              const SizedBox(height: 16),
+
+              const SizedBox(height: 24),
               isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : ElevatedButton.icon(
                       onPressed: updateAd,
                       icon: const Icon(Icons.save),
                       label: Text(t.translate('update')),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber[700],
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        textStyle: const TextStyle(fontSize: 16),
+                      ),
                     ),
             ],
           ),

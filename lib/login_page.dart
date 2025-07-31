@@ -37,17 +37,18 @@ class _LoginPageState extends State<LoginPage> {
     final url = Uri.parse("http://157.245.19.128:8000/api/login");
 
     try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
-      );
+final response = await http.post(
+  Uri.parse('https://delni.co/api/login'),
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+  body: jsonEncode({
+    'email': emailController.text,
+    'password': passwordController.text,
+  }),
+);
+
 
       setState(() => isLoading = false);
 
@@ -175,6 +176,19 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                   const SizedBox(height: 12),
+                   // 🔐 رابط نسيت كلمة المرور
+TextButton(
+  onPressed: () {
+    // يمكنك لاحقًا فتح صفحة reset_password_page
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("سيتم إضافة ميزة استعادة كلمة المرور قريبًا")),
+    );
+  },
+  child: Text(
+    t.translate('forgot_password'),
+    style: const TextStyle(decoration: TextDecoration.underline),
+  ),
+),
 
                   // 📝 رابط التسجيل
                   TextButton(
