@@ -1,6 +1,5 @@
 name: delni_app
-description: تطبيق دلني للإعلانات المبوبة
-
+description: تطبيق دلني للإعلانات المبوبة - Delni Classifieds App
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -11,33 +10,63 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  http: ^1.2.1
-  font_awesome_flutter: ^10.7.0
-  image_picker: ^1.1.0
+
+  shimmer: ^3.0.0
+
+  # 📡 الشبكات و API
+  http: ^1.5.0
   path: ^1.9.0
-  url_launcher: ^6.2.6
+  url_launcher: ^6.3.2
   shared_preferences: ^2.2.2
+  cached_network_image: ^3.4.1
+  share_plus: ^11.1.0
+
+  # 🗺️ الخرائط والمواقع
   flutter_map: ^6.2.1
   latlong2: ^0.9.0
+  flutter_map_marker_cluster: ^1.1.1
   location: ^5.0.3
+
+  # 🧭 الواجهة والأيقونات
+  font_awesome_flutter: ^10.7.0
+  image_picker: ^1.2.0
+  carousel_slider: ^5.0.0   # ✅ لإضافة السلايدر العلوي في الصفحة الرئيسية
+
+  # 🌍 تعدد اللغات
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.2
+
+  # 🚀 إعداد الأيقونة
   flutter_launcher_icons: ^0.14.4
+  geolocator: ^14.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   build_runner: ^2.4.0
   build_web_compilers: ^4.0.4
-
+  flutter_native_splash: ^2.3.9
+  
 flutter:
   uses-material-design: true
-  assets:
-    - assets/images/ad_sample.jpg
 
-flutter_icons:
+  assets:
+    - assets/
+    - assets/images/
+
+flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "icon.png"
+  image_path: "assets/images/delni-logo.png"
+  remove_alpha_ios: true
 
+flutter_native_splash:
+  color: "#FFD600"        # اللون الأصفر الخاص بـ Delni
+  image: assets/images/delni-logo.png
+  android: true
+  ios: true
+  web: false
+  android_gravity: center
+  ios_content_mode: center
+  fullscreen: true

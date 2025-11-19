@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
 
 class TaxiMapPage extends StatefulWidget {
   const TaxiMapPage({super.key});
@@ -12,10 +13,10 @@ class TaxiMapPage extends StatefulWidget {
 class _TaxiMapPageState extends State<TaxiMapPage> {
   final MapController _mapController = MapController();
 
-  // موقع المستخدم المفترض (مثال)
-  final LatLng userLocation = LatLng(33.5138, 36.2765); // دمشق
+  LatLng? userLocation; // ← موقع المستخدم الحقيقي
+  bool _loading = true;
 
-  // سائقين وهميين
+  // سائقين وهميين (لاحقاً سنجلب من السيرفر)
   final List<LatLng> fakeDrivers = [
     LatLng(33.5145, 36.2750),
     LatLng(33.5120, 36.2785),
@@ -23,49 +24,82 @@ class _TaxiMapPageState extends State<TaxiMapPage> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _getUserLocation();
+  }
+
+  Future<void> _getUserLocation() async {
+    // ✅ طلب الإذن
+    final permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      setState(() => _loading = false);
+      return;
+    }
+
+    // ✅ الحصول على موقع المستخدم
+    final pos = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
+    setState(() {
+      userLocation = LatLng(pos.latitude, pos.longitude);
+      _loading = false;
+    });
+
+    // ✅ تحريك الخريطة إلى موقع المستخدم
+    _mapController.move(userLocation!, 15);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Delni Taxi')),
-      body: FlutterMap(
-        mapController: _mapController,
-        options: MapOptions(
-          center: userLocation,
-          zoom: 15.0,
-        ),
-        children: [
-          TileLayer(
-            urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            subdomains: ['a', 'b', 'c'],
-          ),
-          MarkerLayer(
-            markers: [
-              // موقع المستخدم
-              Marker(
-                point: userLocation,
-                width: 40,
-                height: 40,
-                child: Icon(Icons.location_pin, size: 40, color: Colors.blue),
-              ),
-              // سائقين وهميين
-              for (final driver in fakeDrivers)
-                Marker(
-                  point: driver,
-                  width: 40,
-                  height: 40,
-                  child: Icon(Icons.local_taxi, size: 36, color: Colors.amber),
+      appBar: AppBar(title: const Text('🚖 Delni Taxi')),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: Colors.amber))
+          : userLocation == null
+              ? const Center(child: Text("⚠️ لم يتم السماح بالوصول إلى الموقع"))
+              : FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    center: userLocation,
+                    zoom: 15.0,
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      subdomains: ['a', 'b', 'c'],
+                    ),
+                    // ✅ نقطة موقع المستخدم
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: userLocation!,
+                          width: 45,
+                          height: 45,
+                          child: const Icon(Icons.my_location, color: Colors.blue, size: 38),
+                        ),
+
+                        // ✅ السائقين
+                        for (final driver in fakeDrivers)
+                          Marker(
+                            point: driver,
+                            width: 45,
+                            height: 45,
+                            child: const Icon(Icons.local_taxi, color: Colors.amber, size: 38),
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
-            ],
-          ),
-        ],
-      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("🚖 تم إرسال طلب تاكسي!")),
+            const SnackBar(content: Text("🚕 تم إرسال طلب تاكسي! سيتم تطوير الطلب الآن")),
           );
         },
-        label: Text('طلب تاكسي'),
-        icon: Icon(Icons.directions_car),
+        label: const Text('طلب تاكسي'),
+        icon: const Icon(Icons.send),
       ),
     );
   }

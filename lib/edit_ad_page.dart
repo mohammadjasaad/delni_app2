@@ -10,8 +10,13 @@ import 'l10n/app_localizations.dart';
 
 class EditAdPage extends StatefulWidget {
   final Ad ad;
+  final String userToken;
 
-  const EditAdPage({super.key, required this.ad});
+  const EditAdPage({
+    super.key,
+    required this.ad,
+    required this.userToken,
+  });
 
   @override
   State<EditAdPage> createState() => _EditAdPageState();
@@ -40,7 +45,8 @@ class _EditAdPageState extends State<EditAdPage> {
   }
 
   Future<void> pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       setState(() {
         newImage = File(pickedFile.path);
@@ -52,9 +58,9 @@ class _EditAdPageState extends State<EditAdPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = prefs.getString('token') ?? widget.userToken;
 
-    if (token == null) {
+    if (token.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('يرجى تسجيل الدخول أولاً')),
       );
@@ -63,7 +69,7 @@ class _EditAdPageState extends State<EditAdPage> {
 
     setState(() => isLoading = true);
 
-    final uri = Uri.parse('http://delni.co/api/ads/${widget.ad.id}');
+    final uri = Uri.parse('https://delni.co/api/ads/${widget.ad.id}');
     final request = http.MultipartRequest('POST', uri);
     request.headers['Authorization'] = 'Bearer $token';
     request.fields['_method'] = 'PUT';
@@ -84,9 +90,13 @@ class _EditAdPageState extends State<EditAdPage> {
 
     if (response.statusCode == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.translate('ad_updated_success'))),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.translate('ad_updated_success'),
+          ),
+        ),
       );
-      Navigator.pop(context, true); // ✅ إعادة تحميل الصفحة السابقة
+      Navigator.pop(context, true); // ✅ إعادة التحميل عند العودة
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('فشل في تحديث الإعلان')),
@@ -110,32 +120,38 @@ class _EditAdPageState extends State<EditAdPage> {
                 initialValue: title,
                 decoration: InputDecoration(labelText: t.translate('title')),
                 onChanged: (val) => title = val,
-                validator: (val) => val!.isEmpty ? '${t.translate('title')} مطلوب' : null,
+                validator: (val) =>
+                    val!.isEmpty ? '${t.translate('title')} مطلوب' : null,
               ),
               TextFormField(
                 initialValue: description,
-                decoration: InputDecoration(labelText: t.translate('description')),
+                decoration:
+                    InputDecoration(labelText: t.translate('description')),
                 onChanged: (val) => description = val,
-                validator: (val) => val!.isEmpty ? '${t.translate('description')} مطلوبة' : null,
+                validator: (val) =>
+                    val!.isEmpty ? '${t.translate('description')} مطلوبة' : null,
               ),
               TextFormField(
                 initialValue: price,
                 decoration: InputDecoration(labelText: t.translate('price')),
                 keyboardType: TextInputType.number,
                 onChanged: (val) => price = val,
-                validator: (val) => val!.isEmpty ? '${t.translate('price')} مطلوب' : null,
+                validator: (val) =>
+                    val!.isEmpty ? '${t.translate('price')} مطلوب' : null,
               ),
               TextFormField(
                 initialValue: city,
                 decoration: InputDecoration(labelText: t.translate('city')),
                 onChanged: (val) => city = val,
-                validator: (val) => val!.isEmpty ? '${t.translate('city')} مطلوبة' : null,
+                validator: (val) =>
+                    val!.isEmpty ? '${t.translate('city')} مطلوبة' : null,
               ),
               TextFormField(
                 initialValue: category,
                 decoration: InputDecoration(labelText: t.translate('category')),
                 onChanged: (val) => category = val,
-                validator: (val) => val!.isEmpty ? '${t.translate('category')} مطلوبة' : null,
+                validator: (val) =>
+                    val!.isEmpty ? '${t.translate('category')} مطلوبة' : null,
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
@@ -145,19 +161,21 @@ class _EditAdPageState extends State<EditAdPage> {
               ),
               const SizedBox(height: 10),
 
-              // ✅ عرض الصورة المختارة أو الحالية
+              // ✅ عرض الصورة الجديدة أو الحالية
               if (newImage != null)
                 Image.file(newImage!, height: 180, fit: BoxFit.cover)
               else if (widget.ad.images.isNotEmpty)
                 Image.network(
-                  'http://delni.co/storage/${widget.ad.images.first}',
+                  widget.ad.absoluteImages.first,
                   height: 180,
                   fit: BoxFit.cover,
                 )
               else
                 const SizedBox(
                   height: 180,
-                  child: Center(child: Icon(Icons.image_not_supported, size: 60, color: Colors.grey)),
+                  child: Center(
+                      child: Icon(Icons.image_not_supported,
+                          size: 60, color: Colors.grey)),
                 ),
 
               const SizedBox(height: 24),

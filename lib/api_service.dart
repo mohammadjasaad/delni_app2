@@ -1,140 +1,222 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart';
 import 'package:image_picker/image_picker.dart';
 import 'ad_model.dart';
 
 class ApiService {
-  // ⛳️ العنوان الأساسي للسيرفر (تأكد من أنه http وليس https إن لم يكن مفعلًا)
-  static const String baseUrl = 'http://10.0.2.2:8000/api';
+  // 🧠 اختيار السيرفر حسب النظام
+  static final String baseHost = Platform.isAndroid
+      ? 'http://10.0.2.2:8000'
+      : Platform.isIOS
+          ? 'http://127.0.0.1:8000'
+          : 'https://delni.co';
 
-  // ✅ 1. جلب جميع الإعلانات
-  static Future<List<Ad>> fetchAds() async {
-    final response = await http.get(Uri.parse('$baseUrl/ads'));
+  static final String baseUrl = '$baseHost/api';
 
-    if (response.statusCode == 200) {
-      List<dynamic> data = jsonDecode(response.body);
-      return data.map((item) => Ad.fromJson(item)).toList();
-    } else {
-      print('⚠️ fetchAds() error: ${response.statusCode} - ${response.body}');
-      throw Exception('فشل في جلب الإعلانات');
-    }
+  // --------------------------------------------------------
+  // 🟢 تسجيل الدخول عبر واتساب
+  // --------------------------------------------------------
+  static Future<bool> sendWhatsappCode(String phone) async {
+    final resp = await http.post(
+      Uri.parse('$baseUrl/send-whatsapp-code'),
+      headers: {'Accept': 'application/json'},
+      body: {'phone': phone},
+    );
+    final data = jsonDecode(resp.body);
+    return data["status"] == "success";
   }
 
-  // ✅ 2. جلب إعلانات المستخدم (تتطلب توكن)
-  static Future<http.Response> authenticatedGet({
-    required Uri url,
-    required String token,
+  static Future<Map<String, dynamic>?> verifyWhatsappCode(
+      String phone, String code) async {
+    final resp = await http.post(
+      Uri.parse('$baseUrl/verify-whatsapp-code'),
+      headers: {'Accept': 'application/json'},
+      body: {'phone': phone, 'code': code},
+    );
+    if (resp.statusCode == 200) return jsonDecode(resp.body);
+    return null;
+  }
+
+  // --------------------------------------------------------
+  // 🟡 عرض الإعلانات
+  // --------------------------------------------------------
+  static Uri _searchUri({
+    String? q,
+    String? query,
+    String? city,
+    String? category,
+    double? minPrice,
+    double? maxPrice,
+    String? sort,
+    bool isFeatured = false,
   }) {
-    return http.get(
-      url,
+    final effectiveQuery = query ?? q;
+    final params = <String, String>{};
+
+    if (effectiveQuery != null && effectiveQuery.trim().isNotEmpty) {
+      params['query'] = effectiveQuery.trim();
+    }
+    if (city != null && city.isNotEmpty) params['city'] = city;
+    if (category != null && category.isNotEmpty) params['category'] = category;
+    if (minPrice != null) params['min_price'] = minPrice.toString();
+    if (maxPrice != null) params['max_price'] = maxPrice.toString();
+    if (sort != null && sort.isNotEmpty) params['sort'] = sort;
+    if (isFeatured) params['is_featured'] = '1';
+
+    return Uri.parse('$baseUrl/ads/search')
+        .replace(queryParameters: params.isEmpty ? null : params);
+  }
+
+static Future<List<Ad>> fetchAds({
+  String? q,
+  String? query,
+  String? city,
+  String? category,
+  String? subCategory,
+  double? minPrice,
+  double? maxPrice,
+  String? sort,
+  bool isFeatured = false,
+}) async {
+  final params = <String, String>{};
+
+  if (q != null && q.trim().isNotEmpty) params['query'] = q;
+  if (query != null && query.trim().isNotEmpty) params['query'] = query;
+  if (city != null && city.isNotEmpty) params['city'] = city;
+  if (category != null && category.isNotEmpty) params['category'] = category;
+
+  if (subCategory != null && subCategory.isNotEmpty) {
+    params['sub_category'] = subCategory;
+  }
+
+  if (minPrice != null) params['min_price'] = minPrice.toString();
+  if (maxPrice != null) params['max_price'] = maxPrice.toString();
+  if (sort != null && sort.isNotEmpty) params['sort'] = sort;
+  if (isFeatured) params['is_featured'] = '1';
+
+  final uri = Uri.parse('$baseUrl/ads/search')
+      .replace(queryParameters: params);
+
+  final resp = await http.get(uri, headers: {'Accept': 'application/json'});
+
+  if (resp.statusCode == 200) {
+    final data = jsonDecode(resp.body);
+    return (data['ads'] as List).map((e) => Ad.fromJson(e)).toList();
+  }
+
+  throw Exception('فشل في جلب الإعلانات');
+}
+
+
+  // --------------------------------------------------------
+  // 🟣 جلب البانرات (الصفحة الرئيسية)
+  // --------------------------------------------------------
+static Future<List<String>> fetchBanners() async {
+  final resp = await http.get(
+    Uri.parse('$baseUrl/banners'),
+    headers: {'Accept': 'application/json'},
+  );
+
+  if (resp.statusCode == 200) {
+    final data = jsonDecode(resp.body);
+    final banners = data['banners'] as List;
+
+    return banners.map<String>((b) {
+      final path = (b['image'] ?? b['image_desktop'] ?? b['full_url'] ?? '').toString();
+
+      return path.startsWith('http')
+          ? path
+          : 'https://delni.co/storage/$path'; // ✅ هنا الحل
+    }).toList();
+  }
+
+  return [];
+}
+
+
+  // --------------------------------------------------------
+  // 🟣 جلب بانرات دلني مول
+  // --------------------------------------------------------
+  static Future<List<dynamic>> fetchMallBanners() async {
+    final resp = await http.get(
+      Uri.parse('$baseUrl/mall/banners'),
+      headers: {'Accept': 'application/json'},
+    );
+    if (resp.statusCode == 200) return jsonDecode(resp.body)['banners'];
+    return [];
+  }
+
+  // --------------------------------------------------------
+  // 🔐 طلب GET مصادق (مع التوكن)
+  // --------------------------------------------------------
+  static Future<Map<String, dynamic>?> authenticatedGet(
+      String endpoint, String token) async {
+    final resp = await http.get(
+      Uri.parse('$baseUrl$endpoint'),
       headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
       },
     );
+    if (resp.statusCode == 200) return jsonDecode(resp.body);
+    return null;
   }
 
-  // ✅ 3. حذف إعلان
-  static Future<bool> deleteAd({
-    required int adId,
+  // --------------------------------------------------------
+  // 🟦 إعلاناتي (لوحة التحكم)
+  // --------------------------------------------------------
+  static Future<List<Ad>> fetchMyAds(String token) async {
+    final resp = await authenticatedGet('/my-ads', token);
+    if (resp == null || resp['ads'] == null) return [];
+    return (resp['ads'] as List).map((e) => Ad.fromJson(e)).toList();
+  }
+
+  // --------------------------------------------------------
+  // 🟩 إضافة إعلان جديد
+  // --------------------------------------------------------
+  static Future<bool> createAd({
+    required String title,
+    required String description,
+    required String price,
+    required String city,
+    required String category,
+    required List<XFile> images,
     required String token,
   }) async {
-    final url = Uri.parse('$baseUrl/ads/$adId');
+    final uri = Uri.parse('$baseUrl/ads');
+    final req = http.MultipartRequest('POST', uri)
+      ..headers['Authorization'] = 'Bearer $token'
+      ..headers['Accept'] = 'application/json'
+      ..fields.addAll({
+        'title': title,
+        'description': description,
+        'price': price,
+        'city': city,
+        'category': category,
+      });
 
-    final response = await http.delete(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-      },
+    for (final x in images) {
+      req.files.add(await http.MultipartFile.fromPath(
+        'images[]',
+        x.path,
+        filename: basename(x.path),
+      ));
+    }
+
+    final resp = await req.send();
+    return resp.statusCode == 201 || resp.statusCode == 200;
+  }
+
+  // --------------------------------------------------------
+  // ❌ حذف إعلان (يحتاج توكن)
+  // --------------------------------------------------------
+  static Future<bool> deleteAd(int id, String token) async {
+    final resp = await http.delete(
+      Uri.parse('$baseUrl/ads/$id'),
+      headers: {'Authorization': 'Bearer $token'},
     );
-
-    if (response.statusCode == 200) {
-      return true;
-    } else {
-      print('⚠️ deleteAd() error: ${response.statusCode} - ${response.body}');
-      return false;
-    }
+    return resp.statusCode == 200;
   }
-
-  // ✅ 4. البحث في الإعلانات
-  static Future<List<Ad>> searchAds(String query) async {
-    final response = await http.get(Uri.parse('$baseUrl/ads?search=$query'));
-
-    if (response.statusCode == 200) {
-      List<dynamic> data = jsonDecode(response.body);
-      return data.map((item) => Ad.fromJson(item)).toList();
-    } else {
-      print('⚠️ searchAds() error: ${response.statusCode} - ${response.body}');
-      throw Exception('فشل في البحث');
-    }
-  }
-
-  // ✅ 5. إنشاء إعلان جديد مع صور متعددة
-static Future<bool> createAd({
-  required String title,
-  required String description,
-  required String price,
-  required String city,
-  required String category,
-  required int userId,
-  required List<XFile> images,
-  required String token,
-}) async {
-  final uri = Uri.parse('$baseUrl/ads');
-  final request = http.MultipartRequest('POST', uri);
-
-  request.fields['title'] = title;
-  request.fields['description'] = description;
-  request.fields['price'] = price;
-  request.fields['city'] = city;
-  request.fields['category'] = category;
-  request.fields['user_id'] = userId.toString();
-
-  request.headers['Authorization'] = 'Bearer $token';
-  request.headers['Accept'] = 'application/json';
-
-  for (var image in images) {
-    if (kIsWeb) {
-      // 🟣 Web: استخدم readAsBytes
-      final bytes = await image.readAsBytes();
-      final multipartFile = http.MultipartFile.fromBytes(
-        'images[]',
-        bytes,
-        filename: image.name,
-        contentType: MediaType('image', 'jpeg'), // اختياري
-      );
-      request.files.add(multipartFile);
-    } else {
-      // 📱 Mobile: استخدم fromPath
-      final file = await http.MultipartFile.fromPath(
-        'images[]',
-        image.path,
-        filename: basename(image.path),
-      );
-      request.files.add(file);
-    }
-  }
-
-  try {
-    final response = await request.send();
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return true;
-    } else {
-      final respStr = await response.stream.bytesToString();
-      print('❌ createAd() error: ${response.statusCode}');
-      print('🧾 Error body: $respStr');
-      return false;
-    }
-  } catch (e) {
-    print('🔥 Exception in createAd: $e');
-    return false;
-  }
- }
 }

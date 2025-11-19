@@ -1,43 +1,84 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'login_page.dart';
+import 'main_navigation.dart';
 import 'l10n/app_localizations.dart';
-// import 'splash_page.dart'; // إذا أنشأت صفحة البداية لاحقًا
+import 'login_page.dart'; // لو عندك صفحة login
+// استبدلها حسب اسم الملف عندك
 
 void main() {
-  runApp(const MyApp());
+  runApp(const DelniApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class DelniApp extends StatelessWidget {
+  const DelniApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Delni',
       debugShowCheckedModeBanner: false,
-
-      // ✅ استخدم لغة الجهاز تلقائيًا، أو ثبتها مؤقتًا
-      // locale: const Locale('ar'),
-
-      supportedLocales: const [
-        Locale('en'),
-        Locale('ar'),
-      ],
+      title: 'Delni',
+      theme: ThemeData(
+        primarySwatch: Colors.amber,
+        useMaterial3: true,
+      ),
       localizationsDelegates: const [
-        AppLocalizationsDelegate(),
+        AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      supportedLocales: const [
+        Locale('ar'),
+        Locale('en'),
+      ],
+      home: const SplashScreen(),
+    );
+  }
+}
 
-      theme: ThemeData(
-        primarySwatch: Colors.amber,
-        fontFamily: 'Roboto',
+// 🟡 شاشة البداية (Splash)
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    // الانتقال بعد 2 ثانية
+    Timer(const Duration(seconds: 2), () {
+      // ⚙️ هنا منطق التحقق من المستخدم
+      // مثال: إذا كان المستخدم ضيف، افتح صفحة تسجيل الدخول
+      // لو بدنا لاحقًا نفعل SharedPreferences للتحقق من login
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const MainNavigation(
+            phone: "guest",
+            userToken: "guest-token",
+            initialTabIndex: 0,
+          ),
+        ),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFFD600), // خلفية Delni الصفراء
+      body: Center(
+        child: Image.asset(
+          'assets/images/delni-logo.png',
+          width: 160,
+          height: 160,
+        ),
       ),
-
-      home: const LoginPage(), // أو SplashPage إذا جاهزة
     );
   }
 }

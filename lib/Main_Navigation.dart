@@ -7,13 +7,15 @@ import 'my_ads_page.dart';
 import 'profile_page.dart';
 
 class MainNavigation extends StatefulWidget {
-  final String email;
+  final String phone;
   final String userToken;
+  final int initialTabIndex;
 
   const MainNavigation({
     super.key,
-    required this.email,
+    required this.phone,
     required this.userToken,
+    this.initialTabIndex = 0,
   });
 
   @override
@@ -21,38 +23,53 @@ class MainNavigation extends StatefulWidget {
 }
 
 class _MainNavigationState extends State<MainNavigation> {
-  int _currentIndex = 0;
-
-  late final List<Widget> _pages;
+  late int _selectedIndex;
 
   @override
   void initState() {
     super.initState();
-    _pages = [
-      HomePage(loggedInEmail: widget.email),
-      const ServicesPage(),
-      AddAdPage(userEmail: widget.email, userToken: widget.userToken),
-      MyAdsPage(userToken: widget.userToken), // ✅ صفحة إعلاناتي
-      ProfilePage(email: widget.email),
-    ];
+    _selectedIndex = widget.initialTabIndex;
   }
+
+  List<Widget> get pages => [
+        HomePage(
+          phone: widget.phone,
+          userToken: widget.userToken,
+        ),
+
+        const ServicesPage(),
+
+        AddAdPage(
+          userPhone: widget.phone,
+          userToken: widget.userToken,
+        ),
+
+        MyAdsPage(
+          userToken: widget.userToken,
+        ),
+
+        ProfilePage(
+          phone: widget.phone,
+          userToken: widget.userToken,
+        ),
+      ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_currentIndex],
+      body: pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        currentIndex: _selectedIndex,
         selectedItemColor: Colors.amber[800],
         unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed, // ✅ للسماح بأكثر من 3 أيقونات
+        onTap: (index) => setState(() => _selectedIndex = index),
+        type: BottomNavigationBarType.fixed,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'الرئيسية'),
-          BottomNavigationBarItem(icon: Icon(Icons.miscellaneous_services), label: 'الخدمات'),
-          BottomNavigationBarItem(icon: Icon(Icons.add_circle), label: 'إضافة إعلان'),
-          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'إعلاناتي'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'حسابي'),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "الرئيسية"),
+          BottomNavigationBarItem(icon: Icon(Icons.build), label: "الخدمات"),
+          BottomNavigationBarItem(icon: Icon(Icons.add_box), label: "إضافة إعلان"),
+          BottomNavigationBarItem(icon: Icon(Icons.list), label: "إعلاناتي"),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: "حسابي"),
         ],
       ),
     );

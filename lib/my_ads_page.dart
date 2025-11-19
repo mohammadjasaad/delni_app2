@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'ad_model.dart';
 import 'api_service.dart';
 import 'ad_details_page.dart';
-import 'edit_ad_page.dart'; // لاحقًا لزر التعديل
+import 'edit_ad_page.dart';
 
 class MyAdsPage extends StatefulWidget {
   final String userToken;
@@ -25,20 +25,18 @@ class _MyAdsPageState extends State<MyAdsPage> {
   }
 
   Future<List<Ad>> fetchMyAds() async {
-    final url = Uri.parse('http://157.245.19.128:8000/api/my-ads');
+    final url = "https://delni.co/api/my-ads";
 
-    final response = await ApiService.authenticatedGet(
-      url: url,
-      token: widget.userToken,
-    );
+    final response = await ApiService.authenticatedGet(url, widget.userToken);
 
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      myAds = data.map((json) => Ad.fromJson(json)).toList();
+    if (response != null && response["ads"] is List) {
+      myAds = (response["ads"] as List)
+          .map((json) => Ad.fromJson(json))
+          .toList();
       return myAds;
-    } else {
-      throw Exception('فشل تحميل إعلاناتي');
     }
+
+    throw Exception('فشل تحميل إعلاناتي');
   }
 
   Future<void> deleteAd(int adId) async {
@@ -48,27 +46,29 @@ class _MyAdsPageState extends State<MyAdsPage> {
         title: const Text('تأكيد الحذف'),
         content: const Text('هل أنت متأكد من حذف هذا الإعلان؟'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('حذف')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('حذف'),
+          ),
         ],
       ),
     );
 
     if (confirm == true) {
-      final success = await ApiService.deleteAd(
-        adId: adId,
-        token: widget.userToken,
-      );
+      final success = await ApiService.deleteAd(adId, widget.userToken);
       if (success) {
-        setState(() {
-          myAds.removeWhere((ad) => ad.id == adId);
-        });
+        setState(() => myAds.removeWhere((ad) => ad.id == adId));
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم الحذف بنجاح')),
+          const SnackBar(content: Text('✅ تم الحذف بنجاح')),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('فشل في الحذف')),
+          const SnackBar(content: Text('❌ فشل في الحذف')),
         );
       }
     }
@@ -84,9 +84,10 @@ class _MyAdsPageState extends State<MyAdsPage> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
+            print('❌ خطأ تحميل إعلاناتي: ${snapshot.error}');
             return const Center(child: Text('فشل تحميل الإعلانات'));
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('لا توجد إعلانات لك بعد.'));
+            return const Center(child: Text('لا توجد إعلانات بعد.'));
           }
 
           return GridView.builder(
@@ -100,6 +101,13 @@ class _MyAdsPageState extends State<MyAdsPage> {
             ),
             itemBuilder: (context, index) {
               final ad = myAds[index];
+
+              final imageUrl = ad.images.isNotEmpty
+                  ? (ad.images.first.startsWith('http')
+                      ? ad.images.first
+                      : 'https://delni.co${ad.images.first}')
+                  : null;
+
               return GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -108,30 +116,47 @@ class _MyAdsPageState extends State<MyAdsPage> {
                   );
                 },
                 child: Card(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   elevation: 4,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: ClipRRect(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                          child: ad.images.isNotEmpty
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          ),
+                          child: imageUrl != null
                               ? Image.network(
-                                  'http://157.245.19.128:8000/storage/${ad.images.first}',
+                                  imageUrl,
                                   width: double.infinity,
                                   fit: BoxFit.cover,
                                 )
-                              : const Center(child: Icon(Icons.image, size: 50, color: Colors.grey)),
+                              : const Center(
+                                  child: Icon(Icons.image,
+                                      size: 50, color: Colors.grey),
+                                ),
                         ),
                       ),
                       Padding(
                         padding: const EdgeInsets.all(8.0),
-                        child: Text(ad.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        child: Text(
+                          ad.title,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('${ad.price} ₺ - ${ad.city}', style: const TextStyle(fontSize: 12)),
+                        child: Text(
+                          '${ad.price} ل.س - ${ad.city}',
+                          style: const TextStyle(fontSize: 12),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       ButtonBar(
                         alignment: MainAxisAlignment.spaceBetween,
@@ -141,7 +166,12 @@ class _MyAdsPageState extends State<MyAdsPage> {
                             onPressed: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (_) => EditAdPage(ad: ad)),
+                                MaterialPageRoute(
+                                  builder: (_) => EditAdPage(
+                                    ad: ad,
+                                    userToken: widget.userToken,
+                                  ),
+                                ),
                               ).then((updated) {
                                 if (updated == true) {
                                   setState(() => _myAdsFuture = fetchMyAds());

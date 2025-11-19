@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'main_navigation.dart';
 import 'login_page.dart';
-import 'Main_Navigation.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -14,39 +15,38 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
-    checkLoginStatus();
+    _checkAuth();
   }
 
-  Future<void> checkLoginStatus() async {
+  Future<void> _checkAuth() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
-    final email = prefs.getString('email') ?? '';
+    final token = prefs.getString("token");
+    final phone = prefs.getString("phone");
 
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 2)); // سبلاش صغيرة
 
-    if (!mounted) return;
-
-    if (token != null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => MainNavigation(userToken: token, email: email),
-        ),
-      );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginPage()),
-      );
+    if (mounted) {
+      if (token != null && email != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MainNavigation(email: email, userToken: token),
+          ),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: Colors.amber,
       body: Center(
-        child: CircularProgressIndicator(color: Colors.white),
+        child: CircularProgressIndicator(color: Colors.amber),
       ),
     );
   }
